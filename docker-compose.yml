@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+      args:
+        USER_ID: '${WWWUSER:-1000}'
+        GROUP_ID: '${WWWGROUP:-1000}'
+        USER: '${USER:-whoami}'
+    container_name: laravel11-app
+    restart: always
+    working_dir: /var/www/html
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9000:9003"
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/php/config/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - laravel11_network
+
+  nginx:
+    image: nginx:1.19-alpine
+    container_name: laravel11-nginx
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - laravel11_network
+
+  db:
+    container_name: laravel11-db
+    image: mysql:8.0
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: laravel11db
+      MYSQL_USER: laravel11
+      MYSQL_PASSWORD: laravel123
+      MYSQL_ROOT_PASSWORD: laravel123
+    networks:
+      - laravel11_network
+
+networks:
+  laravel11_network:
+    driver: bridge
